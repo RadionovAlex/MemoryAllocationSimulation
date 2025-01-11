@@ -1,4 +1,9 @@
-﻿what can be done with memory: 
+﻿SimulatedMemory and SimulatedMemoryVisualizer can be used in the 
+RAM simulation project where Alloc, Dealloc, Defrag subroutines are required.
+Simple visualizer shows state of memory.
+
+
+what can be done with memory: 
 
 * allocate memory for some purpose (for Object, Array, string as Array)
 * deallocate memory of unused creature (Object, Array, string as Array)
