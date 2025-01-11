@@ -6,12 +6,12 @@ using System.Threading.Tasks;
 
 namespace MemoryAllocationSimulation
 {
-    internal struct FreeChunk
+    internal struct MemoryChunk
     {
         public int Ptr;
         public int Size; 
 
-        public static int Compare(FreeChunk x, FreeChunk y)
+        public static int Compare(MemoryChunk x, MemoryChunk y)
         {
             if (x.Ptr == y.Ptr) 
                 return 0;
@@ -22,17 +22,9 @@ namespace MemoryAllocationSimulation
         }
     }
 
-    internal struct AllocatedChunk
-    {
-        public int Ptr;
-        public int Size; 
-        // let`s say that when deallocating, size can be calculated from type. 
-        // so size - is real size of object
-    }
-
     internal class Memory
     {
-        private LinkedList<FreeChunk> _freeChunks = new ();
+        private LinkedList<MemoryChunk> _freeChunks = new ();
         private int _base;
         private int _ramSize;
        
@@ -41,7 +33,7 @@ namespace MemoryAllocationSimulation
             _base = ramBaseAddress;
             _ramSize = ramSize;
 
-            _freeChunks.AddFirst(new FreeChunk()
+            _freeChunks.AddFirst(new MemoryChunk()
             {
                 Ptr = _base,
                 Size = ramSize
@@ -87,7 +79,7 @@ namespace MemoryAllocationSimulation
         /// </summary>
         internal void Deallocate(int ptr, int size)
         {
-            var newFreeChunk = new FreeChunk()
+            var newFreeChunk = new MemoryChunk()
             {
                 Ptr = ptr,
                 Size = size
@@ -118,7 +110,7 @@ namespace MemoryAllocationSimulation
                 return;
             }
 
-            var sortedFreeChunks = new List<FreeChunk>();
+            var sortedFreeChunks = new List<MemoryChunk>();
 
 
             var chunk = _freeChunks.First;
@@ -128,8 +120,8 @@ namespace MemoryAllocationSimulation
                 chunk = chunk.Next;
             }
 
-            sortedFreeChunks.Sort(FreeChunk.Compare);
-            var sequence = new List<FreeChunk>(); 
+            sortedFreeChunks.Sort(MemoryChunk.Compare);
+            var sequence = new List<MemoryChunk>(); 
             
             for (int i = 1; i < sortedFreeChunks.Count; i++)
             {
@@ -154,7 +146,7 @@ namespace MemoryAllocationSimulation
                         _freeChunks.Remove(uniqueChunk);
                     }
 
-                    var joinedMemoryChunk = new FreeChunk()
+                    var joinedMemoryChunk = new MemoryChunk()
                     {
                         Ptr = baseAddress,
                         Size = totalSize
@@ -167,7 +159,7 @@ namespace MemoryAllocationSimulation
             }
         }
 
-        private bool IsSequential(FreeChunk previous, FreeChunk current)
+        private bool IsSequential(MemoryChunk previous, MemoryChunk current)
         {
             if (previous.Ptr + previous.Size + 1 == current.Ptr)
                 return true;
@@ -175,7 +167,7 @@ namespace MemoryAllocationSimulation
             return false;
         }
 
-        private FreeChunk FindRequiredChunk(int size)
+        private MemoryChunk FindRequiredChunk(int size)
         {
             var node = _freeChunks.First;
             var chunk = node!.Value;
@@ -198,13 +190,13 @@ namespace MemoryAllocationSimulation
             return chunk;
         }
 
-        private void UseFreeMemoryChunkForSize(FreeChunk chunk, int size)
+        private void UseFreeMemoryChunkForSize(MemoryChunk chunk, int size)
         {
             // need to remove freeChunk, but not whole in case size < chunk.Size
 
             if (chunk.Size > size)
             {
-                var newMemoryChunk = new FreeChunk()
+                var newMemoryChunk = new MemoryChunk()
                 {
                     Ptr = chunk.Ptr + size,
                     Size = chunk.Size - size
