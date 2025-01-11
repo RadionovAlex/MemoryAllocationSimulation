@@ -1,15 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace MemoryAllocationSimulation
+﻿namespace MemoryAllocationSimulation
 {
-    internal struct MemoryChunk
+    internal class MemoryChunk
     {
-        public int Ptr;
-        public int Size; 
+        public MemoryChunk(int ptr, int size)
+        {
+            Ptr = ptr;
+            Size = size;
+        }
+
+        public readonly int Ptr;
+        public readonly int Size; 
 
         public static int Compare(MemoryChunk x, MemoryChunk y)
         {
@@ -22,22 +22,26 @@ namespace MemoryAllocationSimulation
         }
     }
 
-    internal class Memory
+    internal class SimulatedMemory
     {
-        private LinkedList<MemoryChunk> _freeChunks = new ();
+        private readonly LinkedList<MemoryChunk> _freeChunks = new ();
+        private readonly LinkedList<MemoryChunk> _busyChunks = new ();
         private int _base;
         private int _ramSize;
+
+        public LinkedList<MemoryChunk> FreeChunks => _freeChunks;
+
+        public LinkedList<MemoryChunk> BusyChunks => _busyChunks;
+
+        public int Base => _base;
+        public int RamSize => _ramSize;
        
         internal void Initalize(int ramBaseAddress, int ramSize)
         {
             _base = ramBaseAddress;
             _ramSize = ramSize;
 
-            _freeChunks.AddFirst(new MemoryChunk()
-            {
-                Ptr = _base,
-                Size = ramSize
-            });
+            _freeChunks.AddFirst(new MemoryChunk(_base, ramSize));
         }
 
         /// <summary>
@@ -77,15 +81,10 @@ namespace MemoryAllocationSimulation
         /// <summary>
         /// 
         /// </summary>
-        internal void Deallocate(int ptr, int size)
+        internal void Deallocate(MemoryChunk allocated)
         {
-            var newFreeChunk = new MemoryChunk()
-            {
-                Ptr = ptr,
-                Size = size
-            };
-
-            _freeChunks.AddLast(newFreeChunk);
+            _freeChunks.AddLast(allocated);
+            _busyChunks.Remove(allocated);
         }
 
         /// <summary>
@@ -110,8 +109,9 @@ namespace MemoryAllocationSimulation
                 return;
             }
 
-            var sortedFreeChunks = new List<MemoryChunk>();
+            Console.WriteLine("Defragmentate");
 
+            var sortedFreeChunks = new List<MemoryChunk>();
 
             var chunk = _freeChunks.First;
             while (chunk != null)
@@ -132,36 +132,39 @@ namespace MemoryAllocationSimulation
                 }
                 else
                 {
-                    if (sequence.Count == 0)
-                        continue;
-
-                    // Join chunks into one
-                    var distinct = sequence.Distinct();
-
-                    var baseAddress = distinct.First().Ptr;
-                    var totalSize = 0;
-                    foreach (var uniqueChunk in distinct)
-                    {
-                        totalSize += uniqueChunk.Size;
-                        _freeChunks.Remove(uniqueChunk);
-                    }
-
-                    var joinedMemoryChunk = new MemoryChunk()
-                    {
-                        Ptr = baseAddress,
-                        Size = totalSize
-                    };
-
-                    _freeChunks.AddLast(joinedMemoryChunk);
-
-                    sequence.Clear();
+                    JoinMemoryChunks(sequence);
                 }
             }
+
+            JoinMemoryChunks(sequence);
+        }
+
+        private void JoinMemoryChunks(List<MemoryChunk> sequence)
+        {
+            if (sequence.Count == 0)
+                return;
+
+            // Join chunks into one
+            var distinct = sequence.Distinct();
+
+            var baseAddress = distinct.First().Ptr;
+            var totalSize = 0;
+            foreach (var uniqueChunk in distinct)
+            {
+                totalSize += uniqueChunk.Size;
+                _freeChunks.Remove(uniqueChunk);
+            }
+
+            var joinedMemoryChunk = new MemoryChunk(baseAddress, totalSize);
+
+            _freeChunks.AddLast(joinedMemoryChunk);
+
+            sequence.Clear();
         }
 
         private bool IsSequential(MemoryChunk previous, MemoryChunk current)
         {
-            if (previous.Ptr + previous.Size + 1 == current.Ptr)
+            if (previous.Ptr + previous.Size == current.Ptr)
                 return true;
 
             return false;
@@ -196,14 +199,12 @@ namespace MemoryAllocationSimulation
 
             if (chunk.Size > size)
             {
-                var newMemoryChunk = new MemoryChunk()
-                {
-                    Ptr = chunk.Ptr + size,
-                    Size = chunk.Size - size
-                };
-
+                var newFreeMemoryChunk = new MemoryChunk(chunk.Ptr + size, chunk.Size - size);
+                var newBusyMemoryChunk = new MemoryChunk(chunk.Ptr, size);
+                
                 var previousNode = _freeChunks.Find(chunk);
-                _freeChunks.AddAfter(previousNode!, newMemoryChunk);
+                _freeChunks.AddAfter(previousNode!, newFreeMemoryChunk);
+                _busyChunks.AddLast(newBusyMemoryChunk);
             }
 
             _freeChunks.Remove(chunk);
