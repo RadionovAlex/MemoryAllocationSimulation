@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace MemoryAllocationSimulation
+﻿namespace MemoryAllocationSimulation
 {
     internal class SimulatedMemoryVisualizer
     {
@@ -18,47 +12,24 @@ namespace MemoryAllocationSimulation
         public void ShowFreeAndBusy()
         {
             Console.WriteLine("\n --- Free and busy chunks --- ");
-            DisplayFreeChunks();
-            DisplayBusyChunks();
+            DisplayChunksWithLabel(_memory.FreeChunks, "Free memory chunks");
+            DisplayChunksWithLabel(_memory.BusyChunks, "Busy memory chunks");
             Console.WriteLine(" ---                      ---\n");
         }
 
-        public void DisplayFreeChunks()
+        public void DisplayChunksWithLabel(LinkedList<MemoryChunk> chunks, string label)
         {
-            var freeChunks = _memory.FreeChunks;
-
-            if (freeChunks.Count == 0)
+            Console.WriteLine(label);
+            if (chunks.Count == 0)
             {
-                Console.WriteLine("No free memory chunks available.");
+                Console.WriteLine("No chunks available.");
                 return;
             }
 
-            Console.WriteLine("Free Memory Chunks:");
             Console.WriteLine("{0, -10} {1, -10}", "Pointer", "Size");
 
-            foreach (var chunk in freeChunks)
-            {
+            foreach (var chunk in chunks)
                 Console.WriteLine("{0, -10} {1, -10}", chunk.Ptr, chunk.Size);
-            }
-        }
-
-        public void DisplayBusyChunks()
-        {
-            var busyChunks = _memory.BusyChunks;
-
-            if (busyChunks.Count == 0)
-            {
-                Console.WriteLine("No busy memory chunks");
-                return;
-            }
-
-            Console.WriteLine("Busy Memory Chunks:");
-            Console.WriteLine("{0, -10} {1, -10}", "Pointer", "Size");
-
-            foreach (var chunk in busyChunks)
-            {
-                Console.WriteLine("{0, -10} {1, -10}", chunk.Ptr, chunk.Size);
-            }
         }
     }
 }
